@@ -71,7 +71,7 @@ void insertNode(NODE*& pRoot, pokemon x)
 }
 
 
-// save Pokemon to Binary Search Tree ===================================================================================
+// save Pokemon to Binary Search Tree ====================================================================================
 vector<string> getInfos(string s)
 {
 	if (s == "[]") return {};
