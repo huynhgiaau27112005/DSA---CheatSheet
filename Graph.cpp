@@ -240,7 +240,6 @@ vector<int> degreeVerticeM(int n, vector<vector<int>> matrix)
 	}
 	else
 	{
-	
 		int cnt = 0;
 		for (int i = 0; i < matrix[n].size(); i++)
 		{
