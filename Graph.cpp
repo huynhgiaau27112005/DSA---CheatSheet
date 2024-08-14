@@ -367,6 +367,87 @@ vector<vector<int>> minimumSpanningTree_prim(const vector<vector<int>>& matrix)
 	return minimumST;
 }
 
+// source: Dvan Hà
+vector<pair<int, int>> Prim_MST(vector<vector<int>> Matrix, int v, vector<bool>& visited)
+{
+    vector<pair<int, int>> MST;
+    vector<int> length( Matrix.size(), INT_MAX);
+    vector<int> parent(Matrix.size(), -1);
+    length[v] = 0;
+
+    for (int i = 0; i != v && i < Matrix.size(); i++)
+    {
+        length[i] = Matrix[v][i];
+        parent[i] = v;
+    }
+
+    visited[v] = true;
+
+    for (int i = 1; i < Matrix.size(); i++)
+    {
+        int save = INT_MAX;
+        int saveVertex = -1;
+
+        for (int i = 1; i < length.size(); i++)
+            if (!visited[i] && length[i] < save)
+            {
+                save = length[i];
+                saveVertex = i;
+            }
+
+        if (saveVertex == -1)
+        {
+            cout << "Graph is not connected\n";
+            return vector<pair<int, int>>();
+        }
+
+        MST.push_back({parent[saveVertex], saveVertex });
+        visited[saveVertex] = true;
+
+        for (int i = 0; i < length.size(); i++)
+            if (!visited[i] && Matrix[saveVertex][i] != 0 && (length[i] == -1 || length[i] > Matrix[saveVertex][i]))
+            {
+                parent[i] = saveVertex;
+                length[i] = Matrix[saveVertex][i];
+            }
+    }
+
+    return MST;
+}
+
+// source: Dvan Ha + chatgpt
+vector<int> dijkstra(const vector<vector<int>>& matrix, int v) 
+{
+    int n = matrix.size();
+    vector<int> length(n, INT_MAX);
+    vector<bool> visited(n, false);
+
+    length[v] = 0;
+
+    for (int i = 0; i < n; ++i) 
+    {
+        int u = -1;
+        for (int j = 0; j < n; ++j)
+            if (!visited[j] && (u == -1 || length[j] < length[u]))
+                u = j;
+
+        if (u == -1 || length[u] == INT_MAX)
+            break;
+
+        visited[u] = true;
+
+        for (int v = 0; v < n; ++v)
+            if (matrix[u][v] != 0 && !visited[v]) 
+            {
+                int newDist = length[u] + matrix[u][v];
+                if (newDist < length[v])
+                    length[v] = newDist;
+            }
+    }
+
+    return length;
+}
+
 int main()
 {
 		
