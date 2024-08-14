@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <map>
+#include <stack>
+#include <queue>
 
 using namespace std;
 
@@ -20,6 +22,34 @@ struct Data
 	Flight F;
 };
 
+bool hasCycle_arrayOfPoints(const vector<vector<Flight>>& matrix, const vector<int>& element);
+
+int countInDegree(int index, const vector<vector<Flight>>& matrix)
+{
+	int cnt = 0;
+	for (int i = 0; i < matrix.size(); i++)
+	{
+		if (matrix[index][i].FlightId != "") cnt++;
+	}
+	return cnt;
+}
+
+int countOutDegree(int index, const vector<vector<Flight>>& matrix)
+{
+	int cnt = 0;
+	for (int i = 0; i < matrix.size(); i++)
+	{
+		if (matrix[i][index].FlightId != "") cnt++;
+	}
+	return cnt;
+}
+
+/*int countDegree(int index, const vector<vector<Flight>>& matrix)
+{
+	int InDegree = countInDegree(index, matrix);
+	int OutDegree = countOutDegree(index, matrix);
+	return InDegree - OutDegree;
+}*/
 
 Data encryptionData(string s)
 {
@@ -85,17 +115,33 @@ Data encryptionData(string s)
 		newData.F.minutes = stoi(minutes);
 	}
 	else
-	{
-		newData.F.hour = 0;
-		
-		stringstream timeStream (time);
-		getline(timeStream, minutes);
-		minutes.erase(0, 1); // delete space + "
-		minutes.erase(0, 1);
-		minutes.pop_back(); // delete "
-		spacePos = minutes.find(' ');
-		minutes.erase(spacePos);
-		newData.F.minutes = stoi(minutes);
+	{		
+		if (time.find('h') != std::string::npos)
+		{
+			stringstream timeStream (time);
+			getline(timeStream, hour);
+			hour.erase(0, 1); // delete space + "
+			hour.erase(0, 1);
+			hour.pop_back(); // delete "
+			spacePos = hour.find(' ');
+			hour.erase(spacePos);
+			newData.F.hour = stoi(hour);
+			
+			newData.F.minutes = 0;
+		}
+		else
+		{
+			newData.F.hour = 0;
+			
+			stringstream timeStream (time);
+			getline(timeStream, minutes);
+			minutes.erase(0, 1); // delete space + "
+			minutes.erase(0, 1);
+			minutes.pop_back(); // delete "
+			spacePos = minutes.find(' ');
+			minutes.erase(spacePos);
+			newData.F.minutes = stoi(minutes);
+		}
 	}
 	
 	return newData;
@@ -145,9 +191,10 @@ vector<vector<Flight>> getMatrix(const vector<Data>& dataList, map<string,int>& 
 		int des = Vertex[curData.Nation.second];
 		matrix[src][des] = curData.F;	
 		matrix[des][src] = curData.F;	
-	}	
+	}
 	return matrix;
 }
+
 
 void printFlight(const vector<vector<Flight>>& matrix)
 {
@@ -161,7 +208,7 @@ void printFlight(const vector<vector<Flight>>& matrix)
 	}
 }
 
-
+// Cho trước 2 nước nation1, nation2, đếm số tổ hợp gồm 4 nước bao gồm nation1, nation2 thỏa mãn 4 nước này tạo thành 1 complete graph
 int countDevelopedRegion(string nation1, string nation2, const vector<vector<Flight>>& matrix, map<string, int>& Vertex) // return the number of region
 {
 	vector<string> vertexList (Vertex.size());
@@ -190,6 +237,7 @@ int countDevelopedRegion(string nation1, string nation2, const vector<vector<Fli
 			ind.push_back(j);
 			countRegion++;
 			
+			
 			// print out
 			for (int x = 0; x < 3; x++)
 				cout << vertexList[ind[x]] << " - ";
@@ -202,6 +250,77 @@ int countDevelopedRegion(string nation1, string nation2, const vector<vector<Fli
 	
 	return countRegion;
 }
+
+// Kiểm tra xem các vertex trong element có tạo thành 1 cyclic graph hay không
+bool hasCycle_arrayOfPoints(const vector<vector<Flight>>& matrix, const vector<int>& element)
+{
+	map<int, bool> visited;
+	map<int, int> parent;
+	for (int x : element)
+	{
+		visited[x] = false;
+		parent[x] = -1;
+	}
+	stack<int> s;
+	
+	s.push(element[0]);
+	visited[element[0]] = true;
+	
+	while (!s.empty())
+	{
+		int i = s.top();
+		s.pop();
+		
+		for (int j : element)
+		{
+			if (matrix[i][j].FlightId != "")
+			{
+				if (visited[j] && j != parent[i])
+					return true;
+				else if (!visited[j])
+				{
+					s.push(j);
+					visited[j] = true;
+					parent[j] = i;
+				}
+			}
+		}
+	}
+	
+	return false;
+}
+
+int countCyclicGraph_nNations_helper(const vector<vector<Flight>>& matrix, map<string, int>& Vertex, vector<int> available, int n, vector<bool>& visited, int start) // available: available nations, n: total of nations to find
+{
+	if (available.size() == n)
+	{
+		if (hasCycle_arrayOfPoints(matrix, available)) return 1;
+		else return 0;
+	}
+	
+	for (int x : available) visited[x] = true;
+	
+	int cnt = 0;
+	
+	for (int i = start; i < Vertex.size(); i++)
+	{
+		if (!visited[i])
+		{
+			available.push_back(i);
+			cnt += countCyclicGraph_nNations_helper(matrix, Vertex, available, n, visited, i + 1);
+			available.pop_back();
+		}
+	}
+	return cnt;
+}
+
+// Cho trước các nước (available), đếm xem có bao nhiêu tổ hợp gồm n nước có bao gồm các nước trong available mà tạo thành 1 cyclic graph
+int countCyclicGraph_nNations(const vector<vector<Flight>>& matrix, map<string, int>& Vertex, vector<int> available, int n)
+{
+	vector<bool> visited (matrix.size(), false);
+	return countCyclicGraph_nNations_helper(matrix, Vertex, available, n, visited, 0);
+}
+
 
 int main()
 {
@@ -222,7 +341,7 @@ int main()
 	}*/
 	//printFlight(matrix);
 	//cout << "start" << endl;
-	cout << countDevelopedRegion("Myanmar", "Vietnam", matrix, Vertex);
+	//cout << countDevelopedRegion("Myanmar", "Vietnam", matrix, Vertex);
 	
 	/*int cnt = 0;
 	vector<string> vertexList (Vertex.size());
@@ -242,5 +361,8 @@ int main()
 	}
 	cout << "No country\n";*/
 	//printFlight(matrix);
+	vector<int> available {Vertex["Vietnam"], Vertex["Myanmar"]};
+	int n = 5;
+	cout << countCyclicGraph_nNations(matrix, Vertex, available, n);
 	return 0;
 }
